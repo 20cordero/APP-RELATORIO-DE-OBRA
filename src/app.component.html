@@ -1,0 +1,194 @@
+<main class="min-h-screen text-gray-200 p-4 sm:p-6 lg:p-8">
+  <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+    
+    <!-- Controls Column -->
+    <div class="flex flex-col gap-6 no-print">
+      <header class="text-center lg:text-left">
+        <h1 class="text-3xl font-bold text-white">Gerador de Relatório de Obra</h1>
+        <p class="text-gray-400 mt-1">Preencha os campos abaixo para gerar o relatório diário.</p>
+      </header>
+      
+      <!-- Card: Dados da Obra -->
+      <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+        <h2 class="text-xl font-semibold mb-4 text-white border-b border-gray-700 pb-2">1. Dados Gerais</h2>
+        <div class="space-y-4">
+          <div>
+            <label for="logo-upload" class="block text-sm font-medium text-gray-300 mb-1">Logomarca da Empresa</label>
+            <input type="file" id="logo-upload" (change)="onLogoSelected($event)" accept="image/*" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
+          </div>
+          <div>
+            <label for="obra" class="block text-sm font-medium text-gray-300 mb-1">Obra</label>
+            <select id="obra" [value]="selectedObra()" (change)="onObraChange($event)" class="w-full bg-gray-700 border-gray-600 text-white rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
+              @for(obra of obras; track obra.nome) {
+                <option [value]="obra.nome" [disabled]="!obra.selecionavel">{{ obra.nome }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label for="fase" class="block text-sm font-medium text-gray-300 mb-1">Fase da Obra</label>
+            <select id="fase" [value]="selectedFase()" (change)="onFaseChange($event)" class="w-full bg-gray-700 border-gray-600 text-white rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
+              @for(fase of fases; track fase) {
+                <option [value]="fase">{{ fase }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label for="contratante" class="block text-sm font-medium text-gray-300 mb-1">Responsável</label>
+            <select id="contratante" [value]="selectedContratante()" (change)="onContratanteChange($event)" class="w-full bg-gray-700 border-gray-600 text-white rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
+              @for(contratante of contratantes; track contratante) {
+                <option [value]="contratante">{{ contratante }}</option>
+              }
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Cards: Conteúdo do Relatório -->
+      <div class="flex items-center justify-between border-b border-gray-700 pb-2 -mb-2">
+        <h2 class="text-xl font-semibold text-white">2. Itens do Relatório (Página {{ currentPageIndex() + 1 }})</h2>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div class="bg-gray-800 p-3 rounded-lg shadow-lg flex items-center gap-2 flex-wrap">
+        <span class="text-sm font-medium text-gray-300 mr-2">Páginas:</span>
+        @for(page of pages(); track page; let i = $index) {
+          <button (click)="goToPage(i)" class="relative px-3 py-1 text-sm font-semibold rounded-md transition-colors" [class]="currentPageIndex() === i ? 'bg-blue-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'">
+            {{ i + 1 }}
+             @if (pages().length > 1) {
+              <span (click)="removePage(i, $event)" class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs leading-none hover:bg-red-500">&times;</span>
+             }
+          </button>
+        }
+        @if (pages().length < 8) {
+          <button (click)="addPage()" class="px-3 py-1 text-sm font-semibold rounded-md bg-green-600 hover:bg-green-700 text-white transition-colors">
+            + Add
+          </button>
+        }
+      </div>
+
+      @for(item of currentReportItems(); track item.id; let i = $index) {
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+          <h3 class="text-lg font-semibold mb-4 text-white">Relatório Item {{ i + 1 }}</h3>
+          <div class="space-y-4">
+            <div>
+              <label [for]="'image-upload-' + i" class="block text-sm font-medium text-gray-300 mb-1">Carregar Imagem</label>
+              <input type="file" [id]="'image-upload-' + i" (change)="onFileSelected($event, i)" accept="image/*" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
+            </div>
+            <div>
+              <label [for]="'image-name-' + i" class="block text-sm font-medium text-gray-300 mb-1">Nome da Imagem</label>
+              <input type="text" [id]="'image-name-' + i" [value]="item.imageName" (input)="onImageNameInput($event, i)" placeholder="Ex: Viga Baldrame Seção 02" class="w-full bg-gray-700 border-gray-600 text-white rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+              <label [for]="'description-' + i" class="block text-sm font-medium text-gray-300 mb-1">Descritivo do Avanço</label>
+              <textarea [id]="'description-' + i" rows="3" [value]="item.workDescription" (input)="onDescriptionInput($event, i)" placeholder="Descreva o progresso, materiais utilizados e quaisquer observações." class="w-full bg-gray-700 border-gray-600 text-white rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+            </div>
+             <div class="flex items-center space-x-4 pt-2">
+              <button (click)="setApprovalStatus('Aprovado', i)" [class]="item.approvalStatus === 'Aprovado' ? 'bg-green-600 ring-2 ring-white' : 'bg-gray-600 hover:bg-green-700'" class="flex-1 flex items-center justify-center p-2 rounded-md text-white font-semibold transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Aprovado
+              </button>
+              <button (click)="setApprovalStatus('Não aprovado', i)" [class]="item.approvalStatus === 'Não aprovado' ? 'bg-red-600 ring-2 ring-white' : 'bg-gray-600 hover:bg-red-700'" class="flex-1 flex items-center justify-center p-2 rounded-md text-white font-semibold transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                Não Aprovado
+              </button>
+            </div>
+            @if(item.approvalStatus === 'Não aprovado') {
+              <div class="mt-4 border-t border-gray-700 pt-4 space-y-4">
+                <div>
+                  <label [for]="'solution-' + i" class="block text-sm font-medium text-red-400 mb-1">Possíveis Soluções</label>
+                  <textarea [id]="'solution-' + i" rows="2" [value]="item.solution" (input)="onSolutionInput($event, i)" placeholder="Descreva a solução para o problema apontado." class="w-full bg-gray-700 border-red-500 text-white rounded-md p-2 focus:ring-red-500 focus:border-red-500"></textarea>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Card: Ações -->
+      <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+        <h2 class="text-xl font-semibold mb-4 text-white border-b border-gray-700 pb-2">3. Ações</h2>
+        <button (click)="printReport()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md transition-colors flex items-center justify-center">
+           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v3a2 2 0 002 2h6a2 2 0 002-2v-3h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" /></svg>
+          Exportar / Imprimir PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- A4 Preview Column -->
+    <div class="lg:sticky top-8 self-start">
+      <h2 class="text-xl font-semibold mb-4 text-white text-center no-print">Pré-visualização do Relatório</h2>
+      <div class="print-area">
+        @for(page of pages(); track page; let pageIndex = $index) {
+          <div class="bg-white text-black shadow-2xl mx-auto flex flex-col mb-8" style="width: 210mm; height: 297mm; padding: 1.5cm; font-family: Arial, sans-serif;">
+            <!-- Header -->
+            <header class="flex justify-between items-start border-b-2 border-gray-300 pb-4">
+              <div class="flex items-center">
+                 @if(companyLogo()) {
+                  <img [src]="companyLogo()" alt="Logomarca da Empresa" class="w-20 h-20 object-contain mr-4">
+                } @else {
+                  <div class="w-20 h-20 bg-gray-200 flex items-center justify-center text-gray-500 text-xs text-center p-2">
+                    LOGO
+                  </div>
+                }
+                <div>
+                    <h1 class="text-xl font-bold">E.M.S CORDERO EIRELI - PROJETOS TURISTICOS</h1>
+                    <h2 class="text-lg font-semibold underline mt-1">RELATORIO DE OBRA</h2>
+                </div>
+              </div>
+              <div class="text-right text-sm flex-shrink-0 ml-4">
+                <p><span class="font-bold">Data e Hora:</span> {{ currentDateTime }}</p>
+                 <p class="mt-2"><span class="font-bold">Obra:</span> {{ selectedObra() }}</p>
+                <p><span class="font-bold">Fase:</span> {{ selectedFase() }}</p>
+                <p><span class="font-bold">Responsável:</span> {{ selectedContratante() }}</p>
+              </div>
+            </header>
+
+            <!-- Content Section -->
+            <section class="mt-4 flex-grow">
+              <div class="grid grid-cols-2 grid-rows-2 gap-4 h-full">
+                 @for(item of page; track item.id) {
+                    <div class="flex flex-col gap-2 border border-gray-300 p-2 rounded-md text-xs">
+                       <!-- Image -->
+                      <div class="w-full h-40 flex-shrink-0">
+                        @if(item.uploadedImage) {
+                         <img [src]="item.uploadedImage" [alt]="item.imageName || 'Imagem da obra'" class="w-full h-full object-cover border border-gray-200 rounded-md">
+                        } @else {
+                          <div class="w-full h-full border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 rounded-md">
+                            Sem imagem
+                          </div>
+                        }
+                      </div>
+                      <!-- Details -->
+                      <div class="flex-grow flex flex-col">
+                        <h3 class="font-bold text-sm">{{ item.imageName || 'Registro sem nome' }}</h3>
+                        <p class="leading-relaxed whitespace-pre-wrap flex-grow my-1 text-gray-700">{{ item.workDescription || 'Nenhuma descrição fornecida.' }}</p>
+                        
+                         @if(item.approvalStatus) {
+                           <div class="mt-auto text-center p-1 rounded-sm font-bold" [class]="item.approvalStatus === 'Aprovado' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                             {{ item.approvalStatus }}
+                           </div>
+                         } @else {
+                          <div class="mt-auto text-center p-1 rounded-sm bg-yellow-100 text-yellow-800 font-bold">
+                             Pendente
+                           </div>
+                         }
+                        @if(item.approvalStatus === 'Não aprovado' && item.solution) {
+                          <div class="mt-2 border-t-2 border-dashed border-red-300 pt-1 text-left">
+                            <div>
+                              <h4 class="font-bold text-red-700 inline">SOLUÇÃO:</h4>
+                              <p class="leading-snug whitespace-pre-wrap text-gray-800 inline">{{ item.solution }}</p>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                }
+              </div>
+            </section>
+          </div>
+        }
+      </div>
+    </div>
+    
+  </div>
+</main>
